@@ -26,9 +26,13 @@ public class DeleteUser extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String check = request.getParameter("zgoda");
-        UserDao dao = new UserDao();
-        dao.deleteUser(id);
-        response.sendRedirect(request.getContextPath() + "/user/list");
+        if ("TAK".equals(check)) {
+            UserDao dao = new UserDao();
+            dao.deleteUser(id);
+            response.sendRedirect(request.getContextPath() + "/user/list");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/user/list");
+        }
 
 
     }
