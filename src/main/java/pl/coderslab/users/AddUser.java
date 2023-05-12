@@ -30,7 +30,7 @@ public class AddUser extends HttpServlet {
 
         dao.create(user);
 
-        response.sendRedirect("user/list");
+        response.sendRedirect("/user/list");
 
 
     }

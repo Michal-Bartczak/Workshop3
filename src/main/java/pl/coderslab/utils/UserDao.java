@@ -12,6 +12,7 @@ public class UserDao {
     private static final String READ_ID_QUERY = "SELECT * FROM users where id= ?";
     private static final String UPDATE_USER_QUERY = "UPDATE users SET username=?, email=?, password= ? where id=?";
     private static final String DELETE_USER_QUERY = "DELETE FROM users WHERE id= ? ";
+    private static final String CHECK_EMAIL_EXISTS_QUERY="SELECT email FROM users WHERE email=?";
 
     private  User createUser(ResultSet resultSet) throws SQLException {
         long userId = resultSet.getLong(Column.ID.name());
@@ -23,12 +24,24 @@ public class UserDao {
 
     public User create(User user) {
         try (Connection conn = DbUtil.getConnection();
-             PreparedStatement preparedStatement = conn.prepareStatement(CREATE_USER_QUERY, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, user.getUserName());
-            preparedStatement.setString(2, user.getEmail());
-            preparedStatement.setString(3, hashPassword(user.getPassword()));
-            preparedStatement.executeUpdate();
-            try (ResultSet resultSet = preparedStatement.getGeneratedKeys()) {
+             PreparedStatement preparedStatementSelect = conn.prepareStatement(CHECK_EMAIL_EXISTS_QUERY);
+             PreparedStatement preparedStatementInsert = conn.prepareStatement(CREATE_USER_QUERY, PreparedStatement.RETURN_GENERATED_KEYS)) {
+
+
+            preparedStatementSelect.setString(1, user.getEmail());
+            try (ResultSet resultSet = preparedStatementSelect.executeQuery()) {
+                if (resultSet.next()) {
+                    System.out.println("Email already exists in the database.");
+                    return null;
+                }
+            }
+
+
+            preparedStatementInsert.setString(1, user.getUserName());
+            preparedStatementInsert.setString(2, user.getEmail());
+            preparedStatementInsert.setString(3, hashPassword(user.getPassword()));
+            preparedStatementInsert.executeUpdate();
+            try (ResultSet resultSet = preparedStatementInsert.getGeneratedKeys()) {
                 if (resultSet.next()) {
                     long generatedId = resultSet.getLong(1);
                     return new User(generatedId, user.getUserName(), user.getEmail(), user.getPassword());
@@ -40,9 +53,8 @@ public class UserDao {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-
     }
+
 
     public String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt());
